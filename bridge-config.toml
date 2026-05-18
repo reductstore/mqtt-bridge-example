@@ -1,0 +1,27 @@
+[[remotes.reduct]]
+name = "local"
+url = "http://reductstore:8383"
+bucket = "all-data"
+
+[remotes.reduct.create_bucket]
+quota_type = "NONE"
+
+[inputs.mqtt.sensor]
+broker = "mqtt://mosquitto:1883"
+client_id = "reduct-bridge"
+version = "v3"
+qos = 1
+entry_prefix = ""
+
+[[inputs.mqtt.sensor.topics]]
+name = "sensor/data"
+entry_name = "sensor-data"
+content_type = "application/json"
+labels = [
+  { field = "temperature", label = "temperature" },
+  { field = "pressure", label = "pressure" },
+]
+
+[pipelines.sensor_pipeline]
+remote = "local"
+inputs = ["sensor"]

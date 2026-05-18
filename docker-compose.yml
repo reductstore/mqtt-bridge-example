@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  reductstore:
+    image: reduct/store:latest
+    ports:
+      - "8383:8383"
+    environment:
+      RS_BUCKET_1_NAME: all-data
+      RS_BUCKET_2_NAME: high-temp
+      RS_REPLICATION_1_NAME: high-temp-replication
+      RS_REPLICATION_1_SRC_BUCKET: all-data
+      RS_REPLICATION_1_DST_BUCKET: high-temp
+      RS_REPLICATION_1_DST_HOST: http://localhost:8383
+      RS_REPLICATION_1_WHEN: '{"&temperature": {"$$gt": 40}}'
+    volumes:
+      - reductstore-data:/data
+
+  reduct-bridge:
+    image: reduct/bridge:latest
+    command: ["reduct-bridge", "/config/bridge-config.toml"]
+    volumes:
+      - ./bridge-config.toml:/config/bridge-config.toml:ro
+    depends_on:
+      - mosquitto
+      - reductstore
+
+  sensor:
+    build:
+      context: ./sensor
+    depends_on:
+      - mosquitto
+
+volumes:
+  reductstore-data:
