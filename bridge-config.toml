@@ -1,11 +1,13 @@
+# Connection details for the reduct remote. This is where the bridge will send data to.
 [[remotes.reduct]]
 name = "local"
 url = "http://reductstore:8383"
+token_api = "reduct"
 bucket = "all-data"
+prefix = ""
 
-[remotes.reduct.create_bucket]
-quota_type = "NONE"
-
+# MQTT connection details.
+# This section defines an MQTT input that will connect to the specified broker and subscribe to the defined topics.
 [inputs.mqtt.sensor]
 broker = "mqtt://mosquitto:1883"
 client_id = "reduct-bridge"
@@ -13,15 +15,18 @@ version = "v3"
 qos = 1
 entry_prefix = ""
 
+# MQTT topic subscription details.
+# In this example, we subscribe to the "sensor/data" topic and specify that the content type is JSON.
+# We also define a label mapping to extract the "temperature" field from the JSON payload and label it as "temp".
 [[inputs.mqtt.sensor.topics]]
 name = "sensor/data"
 entry_name = "sensor-data"
 content_type = "application/json"
 labels = [
-  { field = "temperature", label = "temperature" },
-  { field = "pressure", label = "pressure" },
+  { field = "temperature", label = "temp" },
 ]
 
+# Connect the input to the pipeline. This tells the bridge to take the data from the "sensor" input and send it to the "reduct" remote.
 [pipelines.sensor_pipeline]
 remote = "local"
 inputs = ["sensor"]

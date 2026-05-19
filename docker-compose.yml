@@ -1,6 +1,5 @@
-version: "3.9"
-
 services:
+  # Eclipse Mosquitto MQTT broker
   mosquitto:
     image: eclipse-mosquitto:2
     ports:
@@ -8,23 +7,33 @@ services:
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
+  # ReductStore instance receiving data from ReductBridge and replicating to a high-temp bucket based on the defined replication rule
   reductstore:
     image: reduct/store:latest
     ports:
       - "8383:8383"
     environment:
+      # ReductStore configuration via environment variables
+      RS_API_TOKEN: reduct
+      RS_INSTANCE_NAME: iot-demo
+
+      # Provisioning buckets for storing all data and high-temperature data
       RS_BUCKET_1_NAME: all-data
       RS_BUCKET_2_NAME: high-temp
+
+      # Replication rule to replicate data from all-data to high-temp when temperature exceeds 40 degrees
       RS_REPLICATION_1_NAME: high-temp-replication
       RS_REPLICATION_1_SRC_BUCKET: all-data
       RS_REPLICATION_1_DST_BUCKET: high-temp
       RS_REPLICATION_1_DST_HOST: http://localhost:8383
-      RS_REPLICATION_1_WHEN: '{"&temperature": {"$$gt": 40}}'
+      RS_REPLICATION_1_DST_TOKEN: reduct
+      RS_REPLICATION_1_WHEN: '{"&temp": {"$$gt": 40}}'
     volumes:
       - reductstore-data:/data
 
+  # ReductBridge instance bridging MQTT data to ReductStore based on the defined configuration
   reduct-bridge:
-    image: reduct/bridge:latest
+    image: reduct/bridge:latest-iot
     command: ["reduct-bridge", "/config/bridge-config.toml"]
     volumes:
       - ./bridge-config.toml:/config/bridge-config.toml:ro
